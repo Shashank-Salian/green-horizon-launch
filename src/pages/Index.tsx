@@ -72,12 +72,12 @@ const LeafParticles = () => {
 
       const animateWindLeaf = () => {
         const startY = window.innerHeight * (0.2 + Math.random() * 0.6);
-        const amplitude = 40 + Math.random() * 60;
-        const duration = 5 + Math.random() * 4;
+        const amplitude = 60 + Math.random() * 80;
+        const duration = 12 + Math.random() * 8;
         const totalWidth = window.innerWidth + 200;
-        const waves = 2 + Math.floor(Math.random() * 2);
+        const waves = 3 + Math.floor(Math.random() * 3);
         const peakOpacity = 0.3 + Math.random() * 0.15;
-        const spinTotal = 720 + Math.random() * 360;
+        const spinTotal = 360 + Math.random() * 180;
 
         gsap.set(leaf, { x: -80, y: startY, rotation: 0, opacity: 0 });
 
