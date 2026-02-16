@@ -3,6 +3,7 @@ import gsap from "gsap";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const LEAF_COUNT = 15;
+const WIND_LEAF_COUNT = 6;
 
 const LeafParticles = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -14,6 +15,7 @@ const LeafParticles = () => {
     const leaves: HTMLDivElement[] = [];
     const symbols = ["🍃", "🌿", "☘️", "🍀"];
 
+    // Vertical falling leaves
     for (let i = 0; i < LEAF_COUNT; i++) {
       const leaf = document.createElement("div");
       leaf.textContent = symbols[Math.floor(Math.random() * symbols.length)];
@@ -53,8 +55,54 @@ const LeafParticles = () => {
         });
       };
 
-      // Stagger start times
       gsap.delayedCall(Math.random() * 8, animateLeaf);
+    }
+
+    // Wind-blown horizontal leaves (cartoon swirl)
+    for (let i = 0; i < WIND_LEAF_COUNT; i++) {
+      const leaf = document.createElement("div");
+      leaf.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      leaf.style.position = "absolute";
+      leaf.style.fontSize = `${18 + Math.random() * 14}px`;
+      leaf.style.opacity = "0";
+      leaf.style.pointerEvents = "none";
+      leaf.style.willChange = "transform, opacity";
+      container.appendChild(leaf);
+      leaves.push(leaf);
+
+      const animateWindLeaf = () => {
+        const startY = window.innerHeight * (0.2 + Math.random() * 0.6);
+        const amplitude = 40 + Math.random() * 60;
+        const duration = 4 + Math.random() * 3;
+        const totalWidth = window.innerWidth + 200;
+
+        gsap.set(leaf, { x: -80, y: startY, rotation: 0, opacity: 0 });
+
+        const proxy = { progress: 0 };
+        gsap.to(proxy, {
+          progress: 1,
+          duration,
+          ease: "power1.inOut",
+          onUpdate: () => {
+            const p = proxy.progress;
+            const currentX = -80 + p * totalWidth;
+            const swirlY = startY + Math.sin(p * Math.PI * (3 + Math.random())) * amplitude;
+            const rot = p * (720 + Math.random() * 360);
+            const fade = p < 0.1 ? p * 10 : p > 0.85 ? (1 - p) * 6.67 : 1;
+            gsap.set(leaf, {
+              x: currentX,
+              y: swirlY,
+              rotation: rot,
+              opacity: fade * (0.25 + Math.random() * 0.15),
+            });
+          },
+          onComplete: () => {
+            gsap.delayedCall(2 + Math.random() * 6, animateWindLeaf);
+          },
+        });
+      };
+
+      gsap.delayedCall(1 + Math.random() * 10, animateWindLeaf);
     }
 
     return () => {
