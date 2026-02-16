@@ -73,8 +73,11 @@ const LeafParticles = () => {
       const animateWindLeaf = () => {
         const startY = window.innerHeight * (0.2 + Math.random() * 0.6);
         const amplitude = 40 + Math.random() * 60;
-        const duration = 4 + Math.random() * 3;
+        const duration = 5 + Math.random() * 4;
         const totalWidth = window.innerWidth + 200;
+        const waves = 2 + Math.floor(Math.random() * 2);
+        const peakOpacity = 0.3 + Math.random() * 0.15;
+        const spinTotal = 720 + Math.random() * 360;
 
         gsap.set(leaf, { x: -80, y: startY, rotation: 0, opacity: 0 });
 
@@ -82,22 +85,22 @@ const LeafParticles = () => {
         gsap.to(proxy, {
           progress: 1,
           duration,
-          ease: "power1.inOut",
+          ease: "none",
           onUpdate: () => {
             const p = proxy.progress;
             const currentX = -80 + p * totalWidth;
-            const swirlY = startY + Math.sin(p * Math.PI * (3 + Math.random())) * amplitude;
-            const rot = p * (720 + Math.random() * 360);
-            const fade = p < 0.1 ? p * 10 : p > 0.85 ? (1 - p) * 6.67 : 1;
+            const swirlY = startY + Math.sin(p * Math.PI * waves) * amplitude;
+            const rot = p * spinTotal;
+            const fade = p < 0.12 ? p / 0.12 : p > 0.85 ? (1 - p) / 0.15 : 1;
             gsap.set(leaf, {
               x: currentX,
               y: swirlY,
               rotation: rot,
-              opacity: fade * (0.25 + Math.random() * 0.15),
+              opacity: fade * peakOpacity,
             });
           },
           onComplete: () => {
-            gsap.delayedCall(2 + Math.random() * 6, animateWindLeaf);
+            gsap.delayedCall(3 + Math.random() * 8, animateWindLeaf);
           },
         });
       };
