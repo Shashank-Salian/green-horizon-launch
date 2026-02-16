@@ -2,6 +2,70 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import heroBg from "@/assets/hero-bg.jpg";
 
+const LEAF_COUNT = 15;
+
+const LeafParticles = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const leaves: HTMLDivElement[] = [];
+    const symbols = ["🍃", "🌿", "☘️", "🍀"];
+
+    for (let i = 0; i < LEAF_COUNT; i++) {
+      const leaf = document.createElement("div");
+      leaf.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      leaf.style.position = "absolute";
+      leaf.style.fontSize = `${12 + Math.random() * 16}px`;
+      leaf.style.opacity = "0";
+      leaf.style.pointerEvents = "none";
+      leaf.style.willChange = "transform, opacity";
+      container.appendChild(leaf);
+      leaves.push(leaf);
+
+      const animateLeaf = () => {
+        const startX = Math.random() * window.innerWidth;
+        const drift = (Math.random() - 0.5) * 300;
+        const duration = 8 + Math.random() * 10;
+
+        gsap.set(leaf, {
+          x: startX,
+          y: -30,
+          rotation: Math.random() * 360,
+          opacity: 0,
+        });
+
+        gsap.to(leaf, {
+          y: window.innerHeight + 30,
+          x: startX + drift,
+          rotation: `+=${180 + Math.random() * 360}`,
+          opacity: 0.15 + Math.random() * 0.25,
+          duration,
+          ease: "none",
+          onComplete: animateLeaf,
+          onUpdate: function () {
+            const progress = this.progress();
+            if (progress < 0.1) gsap.set(leaf, { opacity: progress * 4 * (0.15 + Math.random() * 0.1) });
+            else if (progress > 0.85) gsap.set(leaf, { opacity: (1 - progress) * 6 * 0.3 });
+          },
+        });
+      };
+
+      // Stagger start times
+      gsap.delayedCall(Math.random() * 8, animateLeaf);
+    }
+
+    return () => {
+      leaves.forEach((l) => l.remove());
+      gsap.killTweensOf(leaves);
+    };
+  }, []);
+
+  return <div ref={containerRef} className="absolute inset-0 z-[5] overflow-hidden pointer-events-none" />;
+};
+
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const bgRef = useRef<HTMLDivElement>(null);
@@ -45,6 +109,9 @@ const Index = () => {
 
       {/* Overlay */}
       <div ref={overlayRef} className="absolute inset-0 hero-overlay" />
+
+      {/* Floating Leaves */}
+      <LeafParticles />
 
       {/* Content */}
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-6">
