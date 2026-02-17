@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import heroBg from "@/assets/hero-bg.jpg";
 
 const LEAF_COUNT = 15;
 const WIND_LEAF_COUNT = 6;
@@ -119,7 +118,8 @@ const LeafParticles = () => {
 
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const bgRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const circleRevealRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLHeadingElement>(null);
   const comingRef = useRef<HTMLHeadingElement>(null);
@@ -127,39 +127,110 @@ const Index = () => {
   const taglineRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+    const video = videoRef.current;
+    const circleReveal = circleRevealRef.current;
+    
+    if (!video || !circleReveal) return;
+
+    // Calculate the diagonal for full screen coverage
+    const diagonal = Math.sqrt(window.innerWidth ** 2 + window.innerHeight ** 2);
+    // Ratio: 0% = small circle (fully covered), 100% = large circle (fully revealed)
+    const initialRadius = 0; // 0% - starts as a tiny circle (fully black)
+    const finalRadius = diagonal * 0.7; // 100% - covers entire screen (fully revealed)
+
+    // Helper function to create radial gradient mask
+    const createMask = (radius: number) => {
+      return `radial-gradient(circle ${radius}px at center, transparent 0%, transparent ${Math.max(0, radius - 1)}px, black ${radius}px)`;
+    };
 
     // Set initial states
     gsap.set([logoRef.current, comingRef.current, dividerRef.current, taglineRef.current], {
       opacity: 0,
     });
-    gsap.set(bgRef.current, { scale: 1.2, opacity: 0 });
+    gsap.set(video, { opacity: 0 });
     gsap.set(overlayRef.current, { opacity: 0 });
     gsap.set(logoRef.current, { y: -40 });
     gsap.set(comingRef.current, { y: 60, scale: 0.9 });
     gsap.set(dividerRef.current, { scaleX: 0 });
     gsap.set(taglineRef.current, { y: 30 });
+    
+    // Set circle reveal initial state (0% - fully black, small transparent circle)
+    // Mask: transparent = reveals video, black = shows overlay
+    circleReveal.style.maskImage = createMask(initialRadius);
+    circleReveal.style.webkitMaskImage = createMask(initialRadius);
+    gsap.set(circleReveal, {
+      opacity: 1,
+    });
 
-    // Animate
-    tl.to(bgRef.current, { opacity: 1, scale: 1, duration: 2.5, ease: "power2.out" })
-      .to(overlayRef.current, { opacity: 1, duration: 1.5 }, 0.3)
-      .to(logoRef.current, { opacity: 1, y: 0, duration: 1.2 }, 1)
-      .to(comingRef.current, { opacity: 1, y: 0, scale: 1, duration: 1.4 }, 1.3)
-      .to(dividerRef.current, { opacity: 1, scaleX: 1, duration: 1 }, 2)
-      .to(taglineRef.current, { opacity: 1, y: 0, duration: 1 }, 2.2);
+    // Create a proxy object to animate the radius
+    const maskProxy = { radius: initialRadius };
+    
+    // Wait for video to be ready
+    const handleCanPlay = () => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+      // Fade in video
+      tl.to(video, { opacity: 1, duration: 0.3 })
+        // Circle reveal animation - grow the transparent circle from 0% to 100%
+        .to(
+          maskProxy,
+          {
+            radius: finalRadius,
+            duration: 1.2,
+            ease: "power2.out",
+            onUpdate: () => {
+              const mask = createMask(maskProxy.radius);
+              circleReveal.style.maskImage = mask;
+              circleReveal.style.webkitMaskImage = mask;
+            },
+          },
+          0.2
+        )
+        // Fade out the circle reveal overlay
+        .to(circleReveal, { opacity: 0, duration: 0.3 }, "-=0.2")
+        // Continue with existing animations
+        .to(overlayRef.current, { opacity: 1, duration: 1.5 }, "-=1.5")
+        .to(logoRef.current, { opacity: 1, y: 0, duration: 1.2 }, "-=1")
+        .to(comingRef.current, { opacity: 1, y: 0, scale: 1, duration: 1.4 }, "-=0.7")
+        .to(dividerRef.current, { opacity: 1, scaleX: 1, duration: 1 }, "+=0.3")
+        .to(taglineRef.current, { opacity: 1, y: 0, duration: 1 }, "+=0.2");
+    };
+
+    // If video is already loaded, start animation immediately
+    if (video.readyState >= 3) {
+      handleCanPlay();
+    } else {
+      video.addEventListener("canplay", handleCanPlay, { once: true });
+    }
+
+    return () => {
+      video.removeEventListener("canplay", handleCanPlay);
+    };
   }, []);
 
   return (
     <div ref={containerRef} className="relative h-screen w-screen overflow-hidden bg-background">
-      {/* Background Image */}
-      <div
-        ref={bgRef}
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroBg})` }}
+      {/* Background Video */}
+      <video
+        ref={videoRef}
+        className="absolute inset-0 h-full w-full object-cover"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+      >
+        <source src="/hero-video.mp4" type="video/mp4" />
+      </video>
+
+      {/* Circle Reveal Overlay */}
+      <div 
+        ref={circleRevealRef} 
+        className="absolute inset-0 z-[8] bg-black"
       />
 
       {/* Overlay */}
-      <div ref={overlayRef} className="absolute inset-0 hero-overlay" />
+      <div ref={overlayRef} className="absolute inset-0 z-[6] hero-overlay" />
 
       {/* Floating Leaves */}
       <LeafParticles />
